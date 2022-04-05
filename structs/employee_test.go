@@ -10,7 +10,7 @@ func TestEmployee(t *testing.T) {
 	employee := Employee{
 		ID:        1,
 		FirstName: "Li",
-		LastName:  "Fei",
+		LastName:  "Si",
 		Address:   "ShenZhen",
 	}
 	fmt.Printf("%v", employee)
@@ -20,27 +20,27 @@ func TestJson(t *testing.T) {
 	employee := Employee{
 		ID:        1,
 		FirstName: "Li",
-		LastName:  "Fei",
+		LastName:  "Si",
 		Address:   "ShenZhen",
 	}
 	employees := []Employee{
 		employee,
 		{
 			ID:        2,
-			FirstName: "Li",
+			FirstName: "ZhangSan",
 			LastName:  "Yin",
 			Address:   "ChangSha",
 		},
 		{
 			ID:        3,
-			FirstName: "Li",
-			LastName:  "DaiZe",
+			FirstName: "Wang",
+			LastName:  "Wu",
 			Address:   "JiuJiang",
 		},
 		{
 			ID:        4,
-			FirstName: "Chen",
-			LastName:  "YuYun",
+			FirstName: "Ma",
+			LastName:  "Zi",
 			Address:   "JiuJiang",
 		},
 	}
@@ -55,7 +55,7 @@ func TestPointer(t *testing.T) {
 	employee := Employee{
 		ID:        1,
 		FirstName: "Li",
-		LastName:  "Fei",
+		LastName:  "Si",
 		Address:   "ShenZhen",
 	}
 	copy := employee // 复制

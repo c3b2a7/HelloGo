@@ -34,7 +34,7 @@ func TestFuncVariable(t *testing.T) {
 
 func TestVisit(t *testing.T) {
 	// 定义一个切片
-	list := []string{"li", "fei"}
+	list := []string{"a", "b", "c"}
 	// 使用匿名函数打印切片内容
 	visit(list, func(value string) {
 		fmt.Println(value)
