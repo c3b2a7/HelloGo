@@ -21,3 +21,10 @@ func TestGenPlayer(t *testing.T) {
 	player := generator("ZhangSan")
 	fmt.Printf("%v\n", player)
 }
+
+func TestFib(t *testing.T) {
+	f := fib()
+	for i := 0; i < 10; i++ {
+		fmt.Println(f())
+	}
+}
