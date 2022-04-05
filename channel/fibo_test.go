@@ -43,6 +43,7 @@ func TestFibParallelRun2(t *testing.T) {
 	data := make(chan int)
 	quit := make(chan bool)
 
+	// FIXME
 	go fibParallelRun2(data, quit)
 
 	for {
