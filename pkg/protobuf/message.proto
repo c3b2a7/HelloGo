@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package proto;
+option java_package = "me.lolico.example.proto";
+option go_package = "github.com/c3b2a7/HelloGo/protobuf";
+
+message Request {
+  int64 id = 1;
+  Type type = 2;
+  bytes data = 3;
+}
+
+message Response{
+  enum Status{
+    OK = 0;
+    ERROR = 1;
+  }
+  int64 id = 1;
+  Type type = 2;
+  Status status = 3;
+  bytes data = 4;
+}
+
+enum Type {
+  NORMAL = 0;
+  PING = 1;
+  PONG = 2;
+}
+
+service GreetService {
+  // Unary RPC
+  // 客户端发起了一个RPC请求到服务端，服务端进行业务处理并返回响应给客户端，
+  // 这是gRPC最基本的一种工作方式（Unary RPC）
+  rpc Hello(Request) returns (Response) {}
+
+  // Streaming RPC
+  // 服务端流，客户端发出一个RPC请求，服务端客户端与之间建立一个单向的流。
+  // 服务端可以向流中写入多个响应消息，最后主动关闭流；而客户端需要监听这个流，不断获取响应直到流关闭。
+  // 应用场景举例：客户端向服务端发送一个股票代码，服务端就把该股票的实时数据源源不断的返回给客户端。
+  //
+  // 客户端流，客户端传入多个请求对象，服务端返回一个响应结果。
+  // 典型的应用场景举例：物联网终端向服务器上报数据、大数据流式计算等。
+  //
+  // 双向流，双向流式RPC即客户端和服务端均为流式的RPC，能发送多个请求对象也能接收到多个响应对象。
+  // 典型应用示例：聊天应用等。
+  rpc HelloStream(stream Request) returns (stream Response) {}
+}

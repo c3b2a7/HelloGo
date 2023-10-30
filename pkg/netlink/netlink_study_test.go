@@ -1,4 +1,4 @@
-package pkgstudy
+package netlink
 
 import (
 	"log"
