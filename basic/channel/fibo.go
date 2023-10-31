@@ -2,8 +2,6 @@ package channel
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
 )
 
 func fib(number float64) float64 {
@@ -11,10 +9,6 @@ func fib(number float64) float64 {
 	for i := 0; i < int(number); i++ {
 		x, y = y, x+y
 	}
-
-	r := rand.Intn(3)
-	time.Sleep(time.Duration(r) * time.Second)
-
 	return x
 }
 

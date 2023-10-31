@@ -39,5 +39,7 @@ func TestKit(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/kit", server)
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	go func() {
+		log.Fatal(http.ListenAndServe(":8080", mux))
+	}()
 }

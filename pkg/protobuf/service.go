@@ -3,9 +3,9 @@ package protobuf
 import (
 	"context"
 	"fmt"
-	"github.com/c3b2a7/HelloGo/pkg/openai"
 	"io"
 	"log"
+	"strings"
 )
 
 type greetServiceServerImpl struct {
@@ -85,14 +85,14 @@ func magic(b []byte) (ret string) {
 		return "Hello, Grpc!"
 	}
 	ret = string(b)
-	//ret = strings.ReplaceAll(ret, "吗", "")
-	//ret = strings.ReplaceAll(ret, "吧", "")
-	//ret = strings.ReplaceAll(ret, "你", "我")
-	//ret = strings.ReplaceAll(ret, "？", "!")
-	//ret = strings.ReplaceAll(ret, "?", "!")
-	ret, err := openai.AiMagic(ret)
-	if err != nil {
-		return "err: " + err.Error()
-	}
+	ret = strings.ReplaceAll(ret, "吗", "")
+	ret = strings.ReplaceAll(ret, "吧", "")
+	ret = strings.ReplaceAll(ret, "你", "我")
+	ret = strings.ReplaceAll(ret, "？", "!")
+	ret = strings.ReplaceAll(ret, "?", "!")
+	//ret, err := openai.AiMagic(ret)
+	//if err != nil {
+	//	return "err: " + err.Error()
+	//}
 	return ret
 }

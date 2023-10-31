@@ -14,11 +14,15 @@ func (s stringer) String() string {
 }
 
 func TestSprint(t *testing.T) {
-	fmt.Println(Sprint(stringer("aa")))
+	if ret := Sprint(stringer("aa")); ret != "aa" {
+		t.Errorf("unexpected result, expected: %s, actual: %s", "aa", ret)
+	}
 }
 
 func TestSprintAny(t *testing.T) {
-	fmt.Println(SprintAny(stringer("aa")))
+	if ret := SprintAny(stringer("aa")); ret != `"aa"` {
+		t.Errorf("unexpected result, expected: %s, actual: %s", `"aa"`, ret)
+	}
 
 	var a = 1.2
 	fmt.Printf("%#016x\n", *(*uint64)(reflect.ValueOf(&a).UnsafePointer())) // "0x3ff0000000000000"

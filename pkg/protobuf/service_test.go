@@ -21,11 +21,13 @@ func TestGrpcServer(t *testing.T) {
 
 	RegisterGreetServiceServer(server, NewGreetServiceServer())
 
-	err := server.Serve(listen)
-	if err != nil {
-		fmt.Printf("failed to serve: %v", err)
-		return
-	}
+	go func() {
+		err := server.Serve(listen)
+		if err != nil {
+			fmt.Printf("failed to serve: %v", err)
+			return
+		}
+	}()
 }
 
 func TestUnaryCall(t *testing.T) {

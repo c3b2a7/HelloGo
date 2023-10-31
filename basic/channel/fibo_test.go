@@ -39,24 +39,15 @@ func TestFibParallelRun(t *testing.T) {
 func TestFibParallelRun2(t *testing.T) {
 	start := time.Now()
 
-	command := ""
 	data := make(chan int)
 	quit := make(chan bool)
+	defer close(quit)
 
-	// FIXME
 	go fibParallelRun2(data, quit)
 
-	for {
-		num := <-data
-		fmt.Println(num)
-		fmt.Scanf("%s", &command)
-		if command == "quit" {
-			quit <- true
-			break
-		}
+	for count := 0; count < 15; count++ {
+		fmt.Println(<-data)
 	}
-
-	time.Sleep(1 * time.Second)
 
 	elapsed := time.Since(start)
 	fmt.Printf("Done! It took %v seconds!\n", elapsed.Seconds())

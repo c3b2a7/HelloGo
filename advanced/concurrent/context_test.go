@@ -23,7 +23,8 @@ func TestCancelWithChannel(t *testing.T) {
 }
 
 func Test_watch(t *testing.T) {
-	timeout, _ := context.WithTimeout(context.Background(), 3*time.Second)
+	timeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	watch(timeout, func(ctx context.Context) string {
 		return "watcher"
 	})
