@@ -9,51 +9,25 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strings"
 	"time"
 )
 
-func isPrime(number int) bool {
-	for i := 2; i < number; i++ {
-		if number%i == 0 {
-			return false
-		}
-	}
-	if number > 1 {
-		return true
-	}
-	return false
-}
-
-func findPrimeGame() {
-	fmt.Println("Prime numbers less than 20:")
-	for number := 0; number < 20; number++ {
-		if isPrime(number) {
-			fmt.Printf("%d ", number)
-		}
-	}
-}
-
-func guessNumberGame() {
-	val := 0
-	for {
-		fmt.Print("Enter number:")
-		fmt.Scanf("%d", &val)
-		switch {
-		case val < 0:
-			panic("You entered a negative number!")
-		case val == 0:
-			fmt.Println("0 is neither negative nor positive")
-		default:
-			fmt.Println("You entered:", val)
-		}
+func StartGrpcServer() {
+	listen, _ := net.Listen("tcp", "127.0.0.1:9000")
+	srv := grpc.NewServer()
+	srv.RegisterService(&protobuf.GreetService_ServiceDesc, protobuf.NewGreetServiceServer())
+	if err := srv.Serve(listen); err != nil {
+		fmt.Printf("failed to serve: %v", err)
+		return
 	}
 }
 
 func main() {
-	//findPrimeGame()
-	//guessNumberGame()
+	go StartGrpcServer()
+
 	opts := []grpc.DialOption{
 		grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -76,8 +50,8 @@ func main() {
 	errCh := make(chan error)
 	go func() {
 		for {
-			response, err := stream.Recv()
-			if err != nil {
+			response := new(protobuf.Response)
+			if err = stream.RecvMsg(response); err != nil {
 				if err == io.EOF {
 					close(done)
 				} else {
@@ -104,8 +78,7 @@ func main() {
 		request := &protobuf.Request{Id: id, Type: protobuf.Type_NORMAL, Data: []byte(cmd)}
 		log.Printf("Send request %s\n", request)
 
-		err := stream.Send(request)
-		if err != nil {
+		if err = stream.SendMsg(request); err != nil {
 			errCh <- err
 			return
 		}

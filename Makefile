@@ -1,7 +1,3 @@
-gen-proto:
-	protoc --go_out=. --go_opt=paths=source_relative \
-		--go-grpc_out=. --go-grpc_opt=paths=source_relative **/**/*.proto
-
 test: test-linux-amd64 test-linux-arm64 test-freebsd-amd64 test-freebsd-arm64 test-macos-amd64 test-macos-arm64 test-win64 test-win32
 
 test-linux-amd64:
