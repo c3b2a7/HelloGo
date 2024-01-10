@@ -43,5 +43,6 @@ service GreetService {
   //
   // 双向流，双向流式RPC即客户端和服务端均为流式的RPC，能发送多个请求对象也能接收到多个响应对象。
   // 典型应用示例：聊天应用等。
+  // https://juejin.cn/post/7192793369523781691
   rpc HelloStream(stream Request) returns (stream Response) {}
 }
