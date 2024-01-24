@@ -72,7 +72,15 @@ func TestRawHttpJsonRpcServer(t *testing.T) {
 		defer conn.Close()
 		for {
 			request, err := http.ReadRequest(bufio.NewReader(conn))
-			if err != nil {
+			if err != nil || request.Method != "POST" {
+				resp := &http.Response{
+					Request:    request,
+					Proto:      request.Proto,
+					ProtoMajor: request.ProtoMajor,
+					ProtoMinor: request.ProtoMinor,
+					StatusCode: http.StatusBadRequest,
+				}
+				resp.Write(conn)
 				return
 			}
 			if request.URL.RequestURI() != "/jsonrpc" {
@@ -82,17 +90,6 @@ func TestRawHttpJsonRpcServer(t *testing.T) {
 					ProtoMajor: request.ProtoMajor,
 					ProtoMinor: request.ProtoMinor,
 					StatusCode: http.StatusNotFound,
-				}
-				resp.Write(conn)
-				continue
-			}
-			if request.Method != "POST" {
-				resp := &http.Response{
-					Request:    request,
-					Proto:      request.Proto,
-					ProtoMajor: request.ProtoMajor,
-					ProtoMinor: request.ProtoMinor,
-					StatusCode: http.StatusBadRequest,
 				}
 				resp.Write(conn)
 				continue
