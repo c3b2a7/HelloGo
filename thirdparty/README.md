@@ -8,3 +8,4 @@ Each go module in the current directory contains usages of a common third-party 
 - openai
 - protobuf
 - higress-plugin
+- onepassword-sdk-go
