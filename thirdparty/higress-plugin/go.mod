@@ -1,6 +1,6 @@
 module github.com/c3b2a7/HelloGo/thirdparty/higress-plugin
 
-go 1.21.6
+go 1.22.0
 
 require (
 	github.com/alibaba/higress/plugins/wasm-go v1.3.5

@@ -1,6 +1,6 @@
 module github.com/c3b2a7/HelloGo/thirdparty/gopacket
 
-go 1.21
+go 1.22.0
 
 require (
 	github.com/google/gopacket v1.1.19

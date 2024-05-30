@@ -1,6 +1,6 @@
 module github.com/c3b2a7/HelloGo/thirdparty/kit
 
-go 1.21
+go 1.22.0
 
 require github.com/go-kit/kit v0.12.0
 

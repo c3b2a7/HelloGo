@@ -1,6 +1,6 @@
 module github.com/c3b2a7/HelloGo/thirdparty/netlink
 
-go 1.21
+go 1.22.0
 
 require (
 	github.com/coreos/go-iptables v0.6.0

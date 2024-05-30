@@ -1,6 +1,6 @@
 module github.com/c3b2a7/HelloGo/thirdparty/protobuf
 
-go 1.21
+go 1.22.0
 
 require (
 	google.golang.org/grpc v1.57.1

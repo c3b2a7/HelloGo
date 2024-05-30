@@ -1,6 +1,6 @@
 module github.com/c3b2a7/HelloGo/thirdparty/onepassword
 
-go 1.21.6
+go 1.22.0
 
 require github.com/1password/onepassword-sdk-go v0.1.0-beta.9
 
