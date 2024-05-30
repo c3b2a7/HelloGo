@@ -166,7 +166,7 @@ func main() {
 		suffix = ".exe"
 	}
 
-	targetedVersion, err := getProjectProtocVersion("https://raw.githubusercontent.com/c3b2a7/HelloGo/HEAD/pkg/protobuf/message.pb.go")
+	targetedVersion, err := getProjectProtocVersion("https://raw.githubusercontent.com/c3b2a7/HelloGo/HEAD/thirdparty/protobuf/message.pb.go")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

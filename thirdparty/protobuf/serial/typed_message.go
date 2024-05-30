@@ -1,14 +1,15 @@
 package serial
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/known/anypb"
-	"strings"
 )
 
-const TypeURLPrefix = "types.hellogo/"
+const TypeURLPrefix = "types.lolico.me/"
 
 // ToAnypbMessage converts a proto.Message into anypb.Any.
 func ToAnypbMessage(message proto.Message) *anypb.Any {
@@ -35,7 +36,7 @@ func ToProtoMessage(v *anypb.Any) (proto.Message, error) {
 	if err := proto.Unmarshal(v.Value, protoMessage); err != nil {
 		return nil, err
 	}
-	return protoMessage, nil
+	return protoMessage, nil // equals to anypb.UnmarshalNew(v, proto.UnmarshalOptions{})
 }
 
 // GetMessageType returns the name of this proto Message.
@@ -50,11 +51,6 @@ func GetInstance(messageType string) (interface{}, error) {
 		return nil, err
 	}
 	return mt.New().Interface(), nil
-	//mType := reflect.TypeOf(protoadapt.MessageV1Of(mt.Zero().Interface()))
-	//if mType == nil || mType.Elem() == nil {
-	//	return nil, errors.New("Serial: Unknown type: " + messageType)
-	//}
-	//return reflect.New(mType.Elem()).Interface(), nil
 }
 
 func internalType(any *anypb.Any) string {

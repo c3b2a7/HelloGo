@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/c3b2a7/HelloGo/pkg/protobuf"
+	"github.com/c3b2a7/HelloGo/thirdparty/protobuf"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"io"

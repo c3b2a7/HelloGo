@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"github.com/c3b2a7/HelloGo/pkg/kit/endpoint"
+	"github.com/c3b2a7/HelloGo/thirdparty/kit/endpoint"
 	"net/http"
 )
 
