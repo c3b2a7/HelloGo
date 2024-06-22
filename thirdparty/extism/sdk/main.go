@@ -22,7 +22,9 @@ func main() {
 	}
 
 	ctx := context.Background()
-	config := extism.PluginConfig{}
+	config := extism.PluginConfig{
+		EnableWasi: true,
+	}
 	plugin, err := extism.NewPlugin(ctx, manifest, config, []extism.HostFunction{})
 
 	if err != nil {
