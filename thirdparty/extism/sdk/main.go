@@ -22,7 +22,9 @@ func loadWASM(ctx context.Context, functions []extism.HostFunction) (*extism.Plu
 		},
 	}
 
-	config := extism.PluginConfig{}
+	config := extism.PluginConfig{
+		EnableWasi: true,
+	}
 	plugin, err := extism.NewPlugin(ctx, manifest, config, functions)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to initialize plugin: %v\n", err)
