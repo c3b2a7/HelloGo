@@ -26,7 +26,7 @@ func GetSharedCore() *SharedCore {
 	if core == nil {
 		mutex.Lock()
 		if core == nil {
-			plugin, err := loadWASM(context.Background(), []extism.HostFunction{})
+			plugin, err := loadWASM(context.Background(), getHostFunctions())
 			if err != nil {
 				panic(err)
 			}

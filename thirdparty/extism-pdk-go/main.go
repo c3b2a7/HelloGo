@@ -21,6 +21,30 @@ type Invocation struct {
 	Args   []json.RawMessage `json:"args"`
 }
 
+//go:wasmimport host getKey
+func hostGetKey(offset uint64) uint64
+
+//go:wasmimport host getData
+func hostGetData(offset uint64) uint64
+
+func getKey(args []json.RawMessage) string {
+	mem := pdk.AllocateBytes(args[0])
+	defer mem.Free()
+	ptr := hostGetKey(mem.Offset())
+	rmem := pdk.FindMemory(ptr)
+	defer rmem.Free()
+	return string(rmem.ReadBytes())
+}
+
+func getData(args []json.RawMessage) string {
+	mem := pdk.AllocateBytes(args[0])
+	defer mem.Free()
+	ptr := hostGetData(mem.Offset())
+	rmem := pdk.FindMemory(ptr)
+	defer rmem.Free()
+	return string(rmem.ReadBytes())
+}
+
 // WASI supports two modules: Reactors and Commands
 // `_initialize` is a startup callback for reactors module in WASI application
 // see: https://github.com/WebAssembly/WASI/blob/main/legacy/application-abi.md
@@ -30,16 +54,7 @@ type Invocation struct {
 //export _initialize
 func initialize() {
 	handleCryptoRequest := func(args []json.RawMessage, crypto func(key, data string) (string, error)) (any, error) {
-		var request struct {
-			Key  string `json:"key"`
-			Data string `json:"data"`
-		}
-
-		if err := json.Unmarshal(args[0], &request); err != nil {
-			return nil, err
-		}
-
-		return crypto(request.Key, request.Data)
+		return crypto(getKey(args), getData(args))
 	}
 
 	registry.RegisterMethod("encrypt", func(args []json.RawMessage) (any, error) {
