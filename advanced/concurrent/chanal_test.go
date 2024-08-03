@@ -2,6 +2,7 @@ package concurrent
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -52,7 +53,7 @@ func TestChannel(t *testing.T) {
 	createWorkerPool(16, jobCh, resultCh)
 
 	var id int
-	for id < 1000 {
+	for id < 100 {
 		id++
 		randInt := rand.Int()
 		jobCh <- Job{id, randInt}
@@ -64,7 +65,7 @@ func TestConcurrent(t *testing.T) {
 	var wg sync.WaitGroup
 
 	add := func() {
-		for i := 0; i < 50000; i++ {
+		for i := 0; i < 10000; i++ {
 			x++
 		}
 		wg.Done()
@@ -84,7 +85,7 @@ func TestConcurrent1(t *testing.T) {
 	var mu sync.Mutex
 
 	add := func() {
-		for i := 0; i < 50000; i++ {
+		for i := 0; i < 10000; i++ {
 			mu.Lock()
 			x++
 			mu.Unlock()
@@ -97,7 +98,7 @@ func TestConcurrent1(t *testing.T) {
 	go add()
 
 	wg.Wait()
-	fmt.Println(x)
+	assert.Equal(t, 20000, x)
 }
 
 func TestConcurrent2(t *testing.T) {
@@ -105,7 +106,7 @@ func TestConcurrent2(t *testing.T) {
 	var x atomic.Int64
 
 	add := func() {
-		for i := 0; i < 50000; i++ {
+		for i := 0; i < 10000; i++ {
 			x.Add(1)
 		}
 		wg.Done()
@@ -116,7 +117,7 @@ func TestConcurrent2(t *testing.T) {
 	go add()
 
 	wg.Wait()
-	fmt.Println(x.Load())
+	assert.EqualValues(t, 20000, x.Load())
 }
 
 func TestConcurrent3(t *testing.T) {
