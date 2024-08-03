@@ -10,7 +10,7 @@ func Bar() error {
 }
 
 func Foo() (err error) {
-	if err := Bar(); err != nil { // err被屏蔽
+	if err = Bar(); err != nil { // err被屏蔽
 		return
 	}
 	return

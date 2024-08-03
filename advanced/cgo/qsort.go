@@ -8,7 +8,6 @@ extern int _cgo_qsort_compare(void* a, void* b);
 */
 import "C"
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -33,13 +32,10 @@ func QSort(base unsafe.Pointer, num, size int, cmp CompareFunc) {
 	C.qsort(base, C.size_t(num), C.size_t(size), C.qsort_cmp_func_t(C._cgo_qsort_compare))
 }
 
-func QSort_Slice(slice interface{}, less func(int, int) bool) error {
+func QSortSlice[S ~[]E, E any](slice S, cmp func(E, E) int) {
 	sv := reflect.ValueOf(slice)
-	if sv.Kind() != reflect.Slice {
-		return fmt.Errorf("qsort_slice called with non-slice value of type %T", slice)
-	}
 	if sv.Len() == 0 {
-		return nil
+		return
 	}
 	//base := unsafe.Pointer(sv.Index(0).Addr().Pointer())
 	base := sv.Index(0).Addr().UnsafePointer()
@@ -47,14 +43,6 @@ func QSort_Slice(slice interface{}, less func(int, int) bool) error {
 	QSort(base, num, size, func(a, b unsafe.Pointer) int {
 		i := int((uintptr(a) - uintptr(base)) / uintptr(size))
 		j := int((uintptr(b) - uintptr(base)) / uintptr(size))
-		switch {
-		case less(i, j):
-			return -1
-		case less(j, i):
-			return +1
-		default:
-			return 0
-		}
+		return cmp(slice[i], slice[j])
 	})
-	return nil
 }
