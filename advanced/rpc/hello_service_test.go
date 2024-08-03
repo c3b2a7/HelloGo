@@ -1,10 +1,9 @@
 package rpc
 
 import (
-	"bufio"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -13,94 +12,39 @@ import (
 	"testing"
 )
 
-func StartGoRpcServer(address string, callback func(*rpc.Server, net.Conn)) error {
-	server := rpc.NewServer()
-	if err := RegisterHelloService(server, &HelloService{}); err != nil {
-		return err
-	}
-
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return err
-	}
-	for {
-		var conn net.Conn
-		if conn, err = listener.Accept(); err != nil {
-			log.Print("rpc.Serve: accept:", err.Error())
-			return err
-		}
-		go callback(server, conn)
-	}
-}
-
 func TestGobRpcServer(t *testing.T) {
-	err := StartGoRpcServer(":8000", func(server *rpc.Server, conn net.Conn) {
-		server.ServeConn(conn)
-	})
-	if err != nil {
-		t.Error(err)
-	}
+	closer, err := StartGobRpcServer(":8000")
+	require.NoError(t, err, "StartGobRpcServer should not return an error")
+	closer()
 }
 
 func TestJsonRpcServer(t *testing.T) {
-	err := StartGoRpcServer(":8000", func(server *rpc.Server, conn net.Conn) {
-		server.ServeCodec(jsonrpc.NewServerCodec(conn)) // jsonrpc
-	})
-	if err != nil {
-		t.Error(err)
-	}
+	closer, err := StartJsonRpcServer(":8001")
+	require.NoError(t, err, "StartJsonRpcServer should not return an error")
+	closer()
 }
 
 func TestHttpJsonRpcServer(t *testing.T) {
-	rpc.RegisterName(HelloServiceName, &HelloService{})
-	mux := http.NewServeMux()
-	mux.HandleFunc("/jsonrpc", func(w http.ResponseWriter, r *http.Request) {
-		var conn io.ReadWriteCloser = struct {
-			io.Writer
-			io.ReadCloser
-		}{
-			w,
-			r.Body,
-		}
-		rpc.ServeRequest(jsonrpc.NewServerCodec(conn))
-	})
-	http.ListenAndServe(":8000", mux)
+	closer, err := StartHttpJsonRpcServer(":8002")
+	require.NoError(t, err, "StartHttpJsonRpcServer should not return an error")
+	closer()
 }
 
 func TestRawHttpJsonRpcServer(t *testing.T) {
-	StartGoRpcServer(":8000", func(server *rpc.Server, conn net.Conn) {
-		defer conn.Close()
-		for {
-			request, err := http.ReadRequest(bufio.NewReader(conn))
-			if err != nil || request.Method != "POST" {
-				resp := &http.Response{
-					Request:    request,
-					Proto:      request.Proto,
-					ProtoMajor: request.ProtoMajor,
-					ProtoMinor: request.ProtoMinor,
-					StatusCode: http.StatusBadRequest,
-				}
-				resp.Write(conn)
-				return
-			}
-			if request.URL.RequestURI() != "/jsonrpc" {
-				resp := &http.Response{
-					Request:    request,
-					Proto:      request.Proto,
-					ProtoMajor: request.ProtoMajor,
-					ProtoMinor: request.ProtoMinor,
-					StatusCode: http.StatusNotFound,
-				}
-				resp.Write(conn)
-				continue
-			}
-			server.ServeRequest(jsonrpc.NewServerCodec(conn))
-		}
-	})
+	closer, err := StartRawHttpJsonRpcServer(":8003")
+	require.NoError(t, err, "StartRawHttpJsonRpcServer should not return an error")
+	closer()
 }
 
 func TestGobRpcRequest(t *testing.T) {
-	conn, err := net.Dial("tcp", ":8000")
+	addr := "127.0.0.1:8004"
+	closer, err := StartGobRpcServer(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closer()
+
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		t.Error(err)
 	}
@@ -115,7 +59,14 @@ func TestGobRpcRequest(t *testing.T) {
 }
 
 func TestJsonRpcRequest(t *testing.T) {
-	conn, err := net.Dial("tcp", ":8000")
+	addr := "127.0.0.1:8005"
+	closer, err := StartJsonRpcServer(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closer()
+
+	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		t.Error(err)
 	}
@@ -130,8 +81,15 @@ func TestJsonRpcRequest(t *testing.T) {
 }
 
 func TestHttpJsonRpcRequest(t *testing.T) {
+	addr := "127.0.0.1:8006"
+	closer, err := StartHttpJsonRpcServer(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closer()
+
 	body := strings.NewReader(`{"method":"path/to/pkg.HelloService.Hello","params":["from jsonrpc client"],"id":0}`)
-	req, _ := http.NewRequest("POST", "http://127.0.0.1:8000/jsonrpc", body)
+	req, _ := http.NewRequest("POST", "http://"+addr+"/jsonrpc", body)
 	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
 	for i := 0; i < 5; i++ {
 		resp, err := http.DefaultClient.Do(req)
