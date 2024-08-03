@@ -1,3 +1,6 @@
+//go:build protobuf
+// +build protobuf
+
 package protobuf
 
 import (
@@ -14,6 +17,22 @@ import (
 	"testing"
 	"time"
 )
+
+func startGrpcServer(closeCh <-chan any) (string, error) {
+	addr := "127.0.0.1:9000"
+
+	listen, _ := net.Listen("tcp", addr)
+	server := grpc.NewServer()
+
+	RegisterGreetServiceServer(server, NewGreetServiceServer())
+
+	go func() {
+		if err := server.Serve(listen); err != nil {
+			panic(err)
+		}
+	}()
+	return addr, nil
+}
 
 func TestGrpcServer(t *testing.T) {
 	listen, _ := net.Listen("tcp", "127.0.0.1:9000")
