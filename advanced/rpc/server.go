@@ -2,14 +2,18 @@ package rpc
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"strconv"
+	"time"
 )
 
 type ServerCloser func()
@@ -72,7 +76,14 @@ func StartRawHttpJsonRpcServer(addr string) (ServerCloser, error) {
 		defer conn.Close()
 		for {
 			request, err := http.ReadRequest(bufio.NewReader(conn))
-			if err != nil || request.Method != "POST" {
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					return
+				}
+				continue
+			}
+
+			if request.Method != "POST" {
 				resp := &http.Response{
 					Request:    request,
 					Proto:      request.Proto,
@@ -94,9 +105,89 @@ func StartRawHttpJsonRpcServer(addr string) (ServerCloser, error) {
 				resp.Write(conn)
 				continue
 			}
-			server.ServeRequest(jsonrpc.NewServerCodec(conn))
+			server.ServeRequest(newRawHttpCodec(conn, request))
 		}
 	})
+}
+
+type rawHttpCodec struct {
+	rpc.ServerCodec
+
+	request *http.Request
+	conn    net.Conn
+
+	statusCode int
+	header     http.Header
+	body       *bytes.Buffer
+}
+
+func newRawHttpCodec(conn net.Conn, request *http.Request) *rawHttpCodec {
+	codec := &rawHttpCodec{
+		request:    request,
+		conn:       conn,
+		statusCode: http.StatusOK,
+		header:     make(http.Header),
+		body:       new(bytes.Buffer),
+	}
+	codec.ServerCodec = jsonrpc.NewServerCodec(struct {
+		io.Writer
+		io.ReadCloser
+	}{
+		codec.body,
+		request.Body,
+	})
+	return codec
+}
+
+// WriteResponse overrides to write response headers
+func (rw *rawHttpCodec) WriteResponse(resp *rpc.Response, replay any) error {
+	// write body
+	err := rw.ServerCodec.WriteResponse(resp, replay)
+	if err != nil {
+		return err
+	}
+
+	// write headers
+	if rw.header.Get("Date") == "" {
+		rw.header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	}
+
+	contentType := http.DetectContentType(rw.body.Bytes())
+	rw.header.Set("Content-Type", contentType)
+	rw.header.Set("Content-Length", strconv.Itoa(rw.body.Len()))
+
+	return rw.Flush()
+}
+
+// WriteHeader sends an HTTP response header with the provided status code
+func (rw *rawHttpCodec) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+}
+
+// Flush sends the accumulated response to the client
+func (rw *rawHttpCodec) Flush() error {
+	writer := bufio.NewWriter(rw.conn)
+
+	// Write status line
+	statusLine := fmt.Sprintf("HTTP/%d.%d %d %s\r\n", rw.request.ProtoMajor, rw.request.ProtoMinor,
+		rw.statusCode, http.StatusText(rw.statusCode))
+	writer.WriteString(statusLine)
+
+	// Write headers
+	for key, values := range rw.header {
+		for _, value := range values {
+			writer.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
+		}
+	}
+	writer.WriteString("\r\n")
+
+	// Write body
+	_, err := writer.Write(rw.body.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return writer.Flush()
 }
 
 func startRpcServer(address string, callback func(*rpc.Server, net.Conn)) (ServerCloser, error) {

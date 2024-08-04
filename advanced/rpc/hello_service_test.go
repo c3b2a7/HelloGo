@@ -105,3 +105,29 @@ func TestHttpJsonRpcRequest(t *testing.T) {
 		fmt.Println(resp.Request.RemoteAddr, string(b))
 	}
 }
+
+func TestRawHttpJsonRpcRequest(t *testing.T) {
+	addr := "127.0.0.1:8007"
+	closer, err := StartRawHttpJsonRpcServer(addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closer()
+
+	body := strings.NewReader(`{"method":"path/to/pkg.HelloService.Hello","params":["from jsonrpc client"],"id":0}`)
+	req, _ := http.NewRequest("POST", "http://"+addr+"/jsonrpc", body)
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	for i := 0; i < 5; i++ {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return
+		}
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+		resp.Body.Close()
+		body.Seek(0, io.SeekStart)
+		fmt.Println(resp.Request.RemoteAddr, string(b))
+	}
+}
