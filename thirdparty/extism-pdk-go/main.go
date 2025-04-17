@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/c3b2a7/HelloGo/thirdparty/extism-pdk-go/registry"
-
 	"github.com/extism/go-pdk"
 )
 
@@ -17,8 +16,8 @@ const (
 
 // Invocation holds the information required for invoking SDK functionality.
 type Invocation struct {
-	Method string            `json:"method"`
-	Args   []json.RawMessage `json:"args"`
+	Method string `json:"method"`
+	Args   []any  `json:"args"`
 }
 
 //go:wasmimport host getKey
@@ -27,8 +26,12 @@ func hostGetKey(offset uint64) uint64
 //go:wasmimport host getData
 func hostGetData(offset uint64) uint64
 
-func getKey(args []json.RawMessage) string {
-	mem := pdk.AllocateBytes(args[0])
+func getKey(args []any) string {
+	argsBytes, err := json.Marshal(args)
+	if err != nil {
+		panic(err)
+	}
+	mem := pdk.AllocateBytes(argsBytes)
 	defer mem.Free()
 	ptr := hostGetKey(mem.Offset())
 	rmem := pdk.FindMemory(ptr)
@@ -36,8 +39,12 @@ func getKey(args []json.RawMessage) string {
 	return string(rmem.ReadBytes())
 }
 
-func getData(args []json.RawMessage) string {
-	mem := pdk.AllocateBytes(args[0])
+func getData(args []any) string {
+	argsBytes, err := json.Marshal(args)
+	if err != nil {
+		panic(err)
+	}
+	mem := pdk.AllocateBytes(argsBytes)
 	defer mem.Free()
 	ptr := hostGetData(mem.Offset())
 	rmem := pdk.FindMemory(ptr)
@@ -53,19 +60,19 @@ func getData(args []json.RawMessage) string {
 //
 //export _initialize
 func initialize() {
-	handleCryptoRequest := func(args []json.RawMessage, crypto func(key, data string) (string, error)) (any, error) {
+	handleCryptoRequest := func(args []any, crypto func(key, data string) (string, error)) (any, error) {
 		return crypto(getKey(args), getData(args))
 	}
 
-	registry.RegisterMethod("encrypt", func(args []json.RawMessage) (any, error) {
+	registry.RegisterMethod("encrypt", registry.FunctionMethod(func(args []any) (any, error) {
 		return handleCryptoRequest(args, dispatcher.Encrypt)
-	})
-	registry.RegisterMethod("decrypt", func(args []json.RawMessage) (any, error) {
+	}))
+	registry.RegisterMethod("decrypt", registry.FunctionMethod(func(args []any) (any, error) {
 		return handleCryptoRequest(args, dispatcher.Decrypt)
-	})
-	registry.RegisterMethod("getKeys", func(_ []json.RawMessage) (any, error) {
+	}))
+	registry.RegisterMethod("getKeys", registry.FunctionMethod(func(_ []any) (any, error) {
 		return dispatcher.GetKeys(), nil
-	})
+	}))
 }
 
 //export invoke

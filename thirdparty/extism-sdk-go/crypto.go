@@ -15,19 +15,12 @@ type cryptoAPI struct {
 }
 
 func (c cryptoAPI) Encrypt(key, plaintext string) (s string, err error) {
-	err = c.InnerSDK.Invoke(context.Background(), "encrypt", []any{map[string]interface{}{
-		"key":  key,
-		"data": plaintext,
-	}}, &s)
+	err = c.InnerSDK.Invoke(context.Background(), "encrypt", []any{key, plaintext}, &s)
 	return
-
 }
 
 func (c cryptoAPI) Decrypt(key, ciphertext string) (s string, err error) {
-	err = c.InnerSDK.Invoke(context.Background(), "decrypt", []any{map[string]interface{}{
-		"key":  key,
-		"data": ciphertext,
-	}}, &s)
+	err = c.InnerSDK.Invoke(context.Background(), "decrypt", []any{key, ciphertext}, &s)
 	return
 }
 

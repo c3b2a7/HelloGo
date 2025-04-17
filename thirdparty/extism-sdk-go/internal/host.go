@@ -17,11 +17,11 @@ func getKeyHostFunction() extism.HostFunction {
 		if err != nil {
 			panic(err)
 		}
-		dataMap := make(map[string]string)
+		var dataMap []any
 		if err = json.Unmarshal(bytes, &dataMap); err != nil {
 			panic(err)
 		}
-		key, ok := dataMap["key"]
+		key, ok := dataMap[0].(string) // key in arg[0]
 		if !ok {
 			key = ""
 		}
@@ -41,11 +41,11 @@ func getDataHostFunctions() extism.HostFunction {
 		if err != nil {
 			panic(err)
 		}
-		dataMap := make(map[string]string)
+		var dataMap []any
 		if err = json.Unmarshal(bytes, &dataMap); err != nil {
 			panic(err)
 		}
-		data, ok := dataMap["data"]
+		data, ok := dataMap[1].(string) // data in arg[1]
 		if !ok {
 			data = ""
 		}
