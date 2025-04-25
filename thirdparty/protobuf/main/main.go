@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/c3b2a7/HelloGo/thirdparty/protobuf"
+	"github.com/c3b2a7/HelloGo/thirdparty/protobuf/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
@@ -17,8 +18,14 @@ import (
 
 func StartGrpcServer() {
 	listen, _ := net.Listen("tcp", "127.0.0.1:9000")
-	srv := grpc.NewServer()
+
+	srv := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor.UnaryLoggingInterceptor),
+		grpc.StreamInterceptor(interceptor.StreamLoggingInterceptor),
+	)
 	srv.RegisterService(&protobuf.GreetService_ServiceDesc, protobuf.NewGreetServiceServer())
+	//protobuf.RegisterGreetServiceServer(srv, protobuf.NewGreetServiceServer())
+
 	if err := srv.Serve(listen); err != nil {
 		fmt.Printf("failed to serve: %v", err)
 		return
@@ -59,7 +66,7 @@ func main() {
 				}
 				return
 			}
-			log.Printf("Recv response: %s\n", response)
+			log.Printf("[Client] Recv response: %s\n", response)
 		}
 	}()
 
@@ -76,7 +83,7 @@ func main() {
 		}
 
 		request := &protobuf.Request{Id: id, Type: protobuf.Type_NORMAL, Data: []byte(cmd)}
-		log.Printf("Send request %s\n", request)
+		log.Printf("[Client] Send request %s\n", request)
 
 		if err = stream.SendMsg(request); err != nil {
 			errCh <- err
