@@ -20,23 +20,33 @@ func (g *greetServiceServerImpl) Hello(ctx context.Context, request *Request) (*
 	return g.processReq(request)
 }
 
-func (g *greetServiceServerImpl) HelloStream(server GreetService_HelloStreamServer) error {
+func (g *greetServiceServerImpl) HelloStream(stream GreetService_HelloStreamServer) error {
 	reqCh := make(chan *Request)
-	errCh := make(chan error)
-	go recvReq(server, reqCh, errCh)
+	errCh := make(chan error, 1)
+	defer close(reqCh)
+
+	go recvReq(stream, reqCh, errCh)
 
 	for {
 		select {
-		case err := <-errCh:
+		case err, ok := <-errCh:
+			if !ok || err == nil {
+				return nil // err channel closed or err is nil
+			}
 			return g.processErr(err)
-		case req := <-reqCh:
-			log.Printf("Recv request %s\n", req)
+		case req, ok := <-reqCh:
+			if !ok {
+				return nil // req channel closed
+			}
+			log.Printf("[Server] Recv request %v\n", req)
 			resp, err := g.processReq(req)
 			if err != nil {
-				return fmt.Errorf("processReq req[%s] err: %s", req, err)
+				return fmt.Errorf("processReq req[%v] err: %w", req, err)
 			}
-			log.Printf("Send Response %s\n", resp)
-			server.Send(resp)
+			log.Printf("[Server] Send Response %v", resp)
+			if err = stream.Send(resp); err != nil {
+				return fmt.Errorf("send response failed: %w", err)
+			}
 		}
 	}
 }
@@ -66,6 +76,7 @@ func (g *greetServiceServerImpl) processReq(req *Request) (*Response, error) {
 }
 
 func recvReq(server GreetService_HelloStreamServer, reqCh chan<- *Request, errCh chan<- error) {
+	defer close(errCh)
 	for {
 		req, err := server.Recv()
 		if err != nil {
