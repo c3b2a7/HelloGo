@@ -17,15 +17,11 @@ func NewGreetServiceServer() GreetServiceServer {
 }
 
 func (g *greetServiceServerImpl) Hello(ctx context.Context, request *Request) (*Response, error) {
-	return g.processReq(request)
+	return g.processReq(ctx, request)
 }
 
 func (g *greetServiceServerImpl) HelloStream(stream GreetService_HelloStreamServer) error {
-	reqCh := make(chan *Request)
-	errCh := make(chan error, 1)
-	defer close(reqCh)
-
-	go recvReq(stream, reqCh, errCh)
+	reqCh, errCh := recvReq(stream)
 
 	for {
 		select {
@@ -39,26 +35,26 @@ func (g *greetServiceServerImpl) HelloStream(stream GreetService_HelloStreamServ
 				return nil // req channel closed
 			}
 			log.Printf("[Server] Recv request %v\n", req)
-			resp, err := g.processReq(req)
+			resp, err := g.processReq(stream.Context(), req)
 			if err != nil {
-				return fmt.Errorf("processReq req[%v] err: %w", req, err)
+				return err
 			}
 			log.Printf("[Server] Send Response %v", resp)
 			if err = stream.Send(resp); err != nil {
-				return fmt.Errorf("send response failed: %w", err)
+				return g.processErr(err)
 			}
 		}
 	}
 }
 
 func (g *greetServiceServerImpl) processErr(err error) error {
-	if err != io.EOF {
-		return fmt.Errorf("recv req err: %s", err)
+	if err == io.EOF { // errors.Is(err, io.EOF)
+		return nil
 	}
-	return nil
+	return err
 }
 
-func (g *greetServiceServerImpl) processReq(req *Request) (*Response, error) {
+func (g *greetServiceServerImpl) processReq(_ context.Context, req *Request) (*Response, error) {
 	resp := Response{}
 	resp.Id = req.Id
 	switch req.Type {
@@ -67,33 +63,56 @@ func (g *greetServiceServerImpl) processReq(req *Request) (*Response, error) {
 		resp.Data = []byte("pong!")
 	case Type_PONG:
 		resp.Type = Type_NORMAL
-		resp.Data = []byte(magic(nil))
+		if ret, err := magic(nil); err != nil {
+			return nil, fmt.Errorf("processReq req[%v] method: magic, err: %w", req, err)
+		} else {
+			resp.Data = []byte(ret)
+		}
 	case Type_NORMAL:
 		resp.Type = Type_NORMAL
-		resp.Data = []byte(magic(req.Data))
+		if ret, err := magic(req.Data); err != nil {
+			return nil, fmt.Errorf("processReq req[%v] method: magic, err: %w", req, err)
+		} else {
+			resp.Data = []byte(ret)
+		}
 	}
 	return &resp, nil
 }
 
-func recvReq(server GreetService_HelloStreamServer, reqCh chan<- *Request, errCh chan<- error) {
-	defer close(errCh)
-	for {
-		req, err := server.Recv()
-		if err != nil {
-			errCh <- err
-			return
+func recvReq(stream GreetService_HelloStreamServer) (<-chan *Request, <-chan error) {
+	// 封装读取请求和错误处理的逻辑
+	// 调用方只需处理返回的 chan
+	reqCh := make(chan *Request)
+	errCh := make(chan error, 1)
+
+	go func() {
+		defer close(reqCh)
+		defer close(errCh)
+
+		for {
+			req, err := stream.Recv()
+			if err != nil {
+				if err != io.EOF {
+					errCh <- err
+				}
+				return
+			}
+
+			select {
+			case <-stream.Context().Done():
+				errCh <- stream.Context().Err()
+				return
+			case reqCh <- req:
+			}
 		}
-		select {
-		case <-server.Context().Done():
-			return
-		case reqCh <- req:
-		}
-	}
+	}()
+
+	return reqCh, errCh
 }
 
-func magic(b []byte) (ret string) {
+func magic(b []byte) (ret string, err error) {
 	if b == nil {
-		return "Hello, Grpc!"
+		return "Hello, Grpc!", nil
 	}
 	ret = string(b)
 	ret = strings.ReplaceAll(ret, "吗", "")
@@ -101,9 +120,5 @@ func magic(b []byte) (ret string) {
 	ret = strings.ReplaceAll(ret, "你", "我")
 	ret = strings.ReplaceAll(ret, "？", "!")
 	ret = strings.ReplaceAll(ret, "?", "!")
-	//ret, err := openai.AiMagic(ret)
-	//if err != nil {
-	//	return "err: " + err.Error()
-	//}
-	return ret
+	return ret, nil
 }

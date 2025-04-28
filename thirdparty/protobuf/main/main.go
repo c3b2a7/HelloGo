@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/c3b2a7/HelloGo/thirdparty/protobuf"
 	"github.com/c3b2a7/HelloGo/thirdparty/protobuf/interceptor"
@@ -52,9 +53,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
+	defer stream.CloseSend()
 
 	done := make(chan struct{})
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 	go func() {
 		for {
 			response := new(protobuf.Response)
@@ -79,27 +81,25 @@ func main() {
 			continue
 		}
 		if strings.ToLower(cmd) == "quit" {
-			break
-		}
-
-		request := &protobuf.Request{Id: id, Type: protobuf.Type_NORMAL, Data: []byte(cmd)}
-		log.Printf("[Client] Send request %s\n", request)
-
-		if err = stream.SendMsg(request); err != nil {
-			errCh <- err
 			return
 		}
-		id++
-	}
-	stream.CloseSend()
 
-	// 读取响应
-	for {
 		select {
 		case <-done:
 			return
-		case err := <-errCh:
+		case err = <-errCh:
 			log.Printf("err: %s", err)
+			return
+		default:
+			request := &protobuf.Request{Id: id, Type: protobuf.Type_NORMAL, Data: []byte(cmd)}
+			log.Printf("[Client] Send request %s\n", request)
+			if err = stream.SendMsg(request); err != nil {
+				if !errors.Is(err, io.EOF) {
+					log.Printf("send msg err: %s", err)
+				}
+				return
+			}
+			id++
 		}
 	}
 }
