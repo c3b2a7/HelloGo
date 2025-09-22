@@ -18,6 +18,20 @@ func String(b []byte) (s string) {
 	return
 }
 
+func TestString(t *testing.T) {
+	helloBytes := []byte("hello")
+
+	helloStringHacked := String(helloBytes) // share the same memory
+	if helloStringHacked != "hello" {
+		t.Error("unexpected")
+	}
+
+	helloBytes[0] = 'H'
+	if helloStringHacked != "Hello" {
+		t.Error("unexpected")
+	}
+}
+
 func Slice(s string) (b []byte) {
 	pbytes := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	pstring := (*reflect.StringHeader)(unsafe.Pointer(&s))
@@ -25,6 +39,21 @@ func Slice(s string) (b []byte) {
 	pbytes.Len = pstring.Len
 	pbytes.Cap = pstring.Len
 	return
+}
+
+func TestSlice(t *testing.T) {
+	helloString := "hello"
+	helloStringBytes := Slice(helloString)
+
+	// 获取 string 的底层指针
+	stringHdr := (*reflect.StringHeader)(unsafe.Pointer(&helloString))
+	// 获取 []byte 的底层指针
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&helloStringBytes))
+
+	if stringHdr.Data != sliceHdr.Data {
+		t.Errorf("memory not shared: string data=%#x slice data=%#x",
+			stringHdr.Data, sliceHdr.Data)
+	}
 }
 
 // BytesToString is equivalent to String
@@ -36,6 +65,20 @@ func BytesToString(b []byte) string {
 	return unsafe.String(&b[0], len(b))
 }
 
+func TestBytesToString(t *testing.T) {
+	helloBytes := []byte("hello")
+
+	helloStringHacked := BytesToString(helloBytes) // share the same memory of helloBytes
+	if helloStringHacked != "hello" {
+		t.Error("unexpected")
+	}
+
+	helloBytes[0] = 'H'               // modify hello bytes
+	if helloStringHacked != "Hello" { // changed
+		t.Error("unexpected")
+	}
+}
+
 // StringToBytes is equivalent to Slice
 func StringToBytes(s string) []byte {
 	if len(s) == 0 {
@@ -45,26 +88,18 @@ func StringToBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
-func TestBytesToStringHack(t *testing.T) {
-	helloBytes := []byte("hello")
-	helloString := string(helloBytes) // copy
-	if helloString != "hello" {
-		t.Error("unexpected")
-	}
+func TestStringToBytes(t *testing.T) {
+	helloString := "hello"
+	helloStringBytes := StringToBytes(helloString)
 
-	helloStringHacked := String(helloBytes) // share the same memory
-	//helloStringHacked := BytesToString(helloBytes) // share the same memory
-	if helloStringHacked != "hello" {
-		t.Error("unexpected")
-	}
+	// 获取 string 的底层指针
+	stringHdr := (*reflect.StringHeader)(unsafe.Pointer(&helloString))
+	// 获取 []byte 的底层指针
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&helloStringBytes))
 
-	helloBytes[0] = 'H'
-
-	if helloString != "hello" { // unchanged
-		t.Error("unexpected")
-	}
-	if helloStringHacked != "Hello" {
-		t.Error("unexpected")
+	if stringHdr.Data != sliceHdr.Data {
+		t.Errorf("memory not shared: string data=%#x slice data=%#x",
+			stringHdr.Data, sliceHdr.Data)
 	}
 }
 
