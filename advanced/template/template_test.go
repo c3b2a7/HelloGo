@@ -30,3 +30,17 @@ func Test_template_parse(t *testing.T) {
 
 	_ = tmpl.ExecuteTemplate(os.Stdout, "test_template_parse", args)
 }
+
+func Test_if_empty_string(t *testing.T) {
+	var args = struct {
+		Tag        string
+		Prerelease string
+	}{
+		Tag: "v1.5.0",
+		//Prerelease: "beta1",
+	}
+
+	tmpl := template.Must(template.New("test_template_parse").Parse(`{{ if .Prerelease }}Pre-release {{ .Tag }}{{ else }}Release {{ .Tag }}{{ end }}`))
+
+	_ = tmpl.ExecuteTemplate(os.Stdout, "test_template_parse", args)
+}

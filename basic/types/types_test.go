@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"testing"
+	"unsafe"
 )
 
 func TestRef(t *testing.T) {
@@ -51,6 +52,25 @@ func TestSlice3(t *testing.T) {
 
 	fmt.Printf("%v\n", s)
 	fmt.Printf("%v\n", s[:len(s)-1])
+}
+
+func TestSliceReCap(t *testing.T) {
+	// 切片的定义
+	//type slice struct {
+	//    array unsafe.Pointer // 指向底层数组
+	//    len   int
+	//    cap   int
+	//}
+
+	a := make([]int64, 1, 2)
+	// 虽然追加元素后没有重新赋值，其实底层数组已经更新了。
+	_ = append(a, 6)
+	// 由于 slice 的 len 字段不是指针，才未能更新正确的长度导致报错。
+	// fmt.Println(a[1]) // 越界！
+	// 强制访问 a[1]
+	baseAddr := unsafe.Pointer(&a[0])
+	offset := unsafe.Sizeof(a[0])
+	fmt.Println(*(*int64)(unsafe.Pointer(uintptr(baseAddr) + offset))) // 6
 }
 
 func TestCopySlice(t *testing.T) {
